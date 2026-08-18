@@ -1,0 +1,664 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Database Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #e94560;
+            margin-bottom: 20px;
+        }
+        .status-bar {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-dot.online {
+            background: #4caf50;
+        }
+        .status-dot.offline {
+            background: #f44336;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #e94560;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #c73652;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #533483;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #432a6e;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #388e3c;
+            transform: translateY(-2px);
+        }
+        .table-container {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th {
+            background: #1a1a2e;
+            color: #e94560;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #e94560;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #2a2a4e;
+        }
+        tr:hover {
+            background: #1f1f3a;
+        }
+        .table-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #e94560;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+        .error {
+            color: #f44336;
+            padding: 20px;
+            text-align: center;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        .json-view {
+            background: #0d0d1a;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            max-height: 400px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .view-toggle {
+            margin: 10px 0;
+        }
+        .add-record-panel {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .add-record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .add-record-header h2 {
+            color: #e94560;
+            font-size: 18px;
+        }
+
+        .table-select {
+            background: #0d0d1a;
+            color: #eee;
+            border: 1px solid #3a3a5e;
+            border-radius: 6px;
+            padding: 10px 12px;
+            min-width: 220px;
+            font-size: 14px;
+        }
+
+        .record-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-field label {
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .form-field .type-hint {
+            color: #777;
+            font-size: 11px;
+        }
+
+        .form-field input,
+        .form-field select {
+            width: 100%;
+            background: #0d0d1a;
+            color: #eee;
+            border: 1px solid #3a3a5e;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus,
+        .table-select:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .form-message {
+            font-size: 13px;
+        }
+
+        .form-message.success {
+            color: #4caf50;
+        }
+
+        .form-message.error {
+            color: #f44336;
+        }
+
+        .badge {
+            background: #e94560;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Music Database Viewer</h1>
+        
+        <div class="status-bar">
+            <div class="status-indicator">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Checking connection...</span>
+            </div>
+            <button class="btn btn-success" onclick="testConnection()">Test Connection</button>
+            <button class="btn btn-primary" onclick="fetchAllData()">Load All Data</button>
+            <span id="timestamp" style="color: #888; font-size: 12px;"></span>
+        </div>
+
+        <div class="stats" id="statsContainer"></div>
+
+        <div class="add-record-panel">
+            <div class="add-record-header">
+                <h2>➕ Add Record</h2>
+                <select id="insertTableSelect" class="table-select" onchange="loadInsertForm()">
+                    <option value="">Select a table...</option>
+                </select>
+            </div>
+            <div id="insertFormContainer">
+                <p style="color: #888;">Select a table to generate an input form.</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-secondary" onclick="fetchTable('users')">Users</button>
+            <button class="btn btn-secondary" onclick="fetchTable('artists')">Artists</button>
+            <button class="btn btn-secondary" onclick="fetchTable('songs')">Songs</button>
+            <button class="btn btn-secondary" onclick="fetchTable('playlists')">Playlists</button>
+            <button class="btn btn-secondary" onclick="fetchTable('artist-members')">Artist Members</button>
+            <button class="btn btn-secondary" onclick="fetchTable('liked-songs')">Liked Songs</button>
+            <button class="btn btn-secondary" onclick="fetchTable('listen-history')">Listen History</button>
+        </div>
+
+        <div id="content">
+            <div class="table-container">
+                <div class="table-title">📊 Data Viewer</div>
+                <div style="text-align: center; padding: 40px; color: #888;">
+                    Click a button above to load data or use "Load All Data" to see everything
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://98.70.35.215:5000/api/';
+
+        // Auto-test connection on load
+        window.onload = function() {
+            testConnection();
+        };
+
+        function updateStatus(success, message) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            if (success) {
+                dot.className = 'status-dot online';
+                text.textContent = '✅ ' + message;
+            } else {
+                dot.className = 'status-dot offline';
+                text.textContent = '❌ ' + message;
+            }
+        }
+
+        function updateTimestamp() {
+            document.getElementById('timestamp').textContent = '🕐 ' + new Date().toLocaleTimeString();
+        }
+
+        async function testConnection() {
+            try {
+                const response = await fetch(API_BASE + '/test-connection');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    updateStatus(true, 'Connected to database');
+                    // Also fetch tables list
+                    await fetchTablesList();
+                } else {
+                    updateStatus(false, 'Connection failed: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                updateStatus(false, 'Cannot connect to server: ' + error.message);
+            }
+            updateTimestamp();
+        }
+
+        async function fetchTablesList() {
+            try {
+                const response = await fetch(API_BASE + '/tables');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    const stats = document.getElementById('statsContainer');
+                    stats.innerHTML = `<div class="stat-card">
+                        <div class="stat-number">${data.tables.length}</div>
+                        <div class="stat-label">Tables Found</div>
+                    </div>`;
+
+                    const select = document.getElementById('insertTableSelect');
+                    select.innerHTML = '<option value="">Select a table...</option>' +
+                        data.tables.map(table =>
+                            `<option value="${escapeHtml(table)}">${escapeHtml(table)}</option>`
+                        ).join('');
+                }
+            } catch (error) {
+                console.error('Failed to fetch tables list:', error);
+            }
+        }
+
+        async function loadInsertForm() {
+            const tableName = document.getElementById('insertTableSelect').value;
+            const container = document.getElementById('insertFormContainer');
+
+            if (!tableName) {
+                container.innerHTML = '<p style="color: #888;">Select a table to generate an input form.</p>';
+                return;
+            }
+
+            container.innerHTML = '<div class="loading" style="padding: 20px;">Loading table columns...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/table-schema/${encodeURIComponent(tableName)}`);
+                const data = await response.json();
+
+                if (data.status !== 'success') {
+                    throw new Error(data.message || 'Failed to load table schema');
+                }
+
+                renderInsertForm(data.table, data.columns);
+            } catch (error) {
+                container.innerHTML =
+                    `<div class="error" style="padding: 15px;">Error: ${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        function renderInsertForm(tableName, columns) {
+            const container = document.getElementById('insertFormContainer');
+            let fields = '';
+
+            columns.forEach(column => {
+                const name = column.Field;
+                const type = column.Type.toLowerCase();
+                const extra = (column.Extra || '').toLowerCase();
+                const isAutoIncrement = extra.includes('auto_increment');
+                const isNullable = column.Null === 'YES';
+                const hasDefault = column.Default !== null;
+                const required = !isNullable && !hasDefault && !isAutoIncrement;
+
+                // Do not ask the user for AUTO_INCREMENT values.
+                if (isAutoIncrement) return;
+
+                let inputType = 'text';
+                let inputAttributes = '';
+
+                if (type.includes('int') || type.includes('decimal') ||
+                    type.includes('float') || type.includes('double')) {
+                    inputType = 'number';
+                    inputAttributes = type.includes('decimal') ||
+                        type.includes('float') || type.includes('double')
+                        ? ' step="any"'
+                        : ' step="1"';
+                } else if (type.includes('datetime') || type.includes('timestamp')) {
+                    inputType = 'datetime-local';
+                } else if (type === 'date' || type.startsWith('date(')) {
+                    inputType = 'date';
+                } else if (type.includes('time')) {
+                    inputType = 'time';
+                }
+
+                const placeholder = hasDefault
+                    ? `Default: ${column.Default}`
+                    : (isNullable ? 'Optional' : 'Enter value');
+
+                fields += `
+                    <div class="form-field">
+                        <label for="field_${escapeHtml(name)}">
+                            ${escapeHtml(name)}${required ? ' *' : ''}
+                        </label>
+                        <span class="type-hint">${escapeHtml(column.Type)}${isNullable ? ' • nullable' : ''}</span>
+                        <input
+                            id="field_${escapeHtml(name)}"
+                            name="${escapeHtml(name)}"
+                            type="${inputType}"
+                            placeholder="${escapeHtml(placeholder)}"
+                            ${required ? 'required' : ''}
+                            ${inputAttributes}
+                        >
+                    </div>`;
+            });
+
+            if (!fields) {
+                fields = '<p style="color:#888;">This table only has auto-generated columns.</p>';
+            }
+
+            container.innerHTML = `
+                <form id="recordForm" onsubmit="submitRecord(event, '${escapeJsString(tableName)}')">
+                    <div class="record-form">${fields}</div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success">Add Record</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadInsertForm()">Clear</button>
+                        <span id="insertMessage" class="form-message"></span>
+                    </div>
+                </form>`;
+        }
+
+        async function submitRecord(event, tableName) {
+            event.preventDefault();
+
+            const form = event.target;
+            const message = document.getElementById('insertMessage');
+            const formData = new FormData(form);
+            const record = {};
+
+            for (const [key, value] of formData.entries()) {
+                if (value !== '') record[key] = value;
+            }
+
+            message.className = 'form-message';
+            message.textContent = 'Adding record...';
+
+            try {
+                const response = await fetch(
+                    `${API_BASE}/insert/${encodeURIComponent(tableName)}`,
+                    {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(record)
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || data.status !== 'success') {
+                    throw new Error(data.message || 'Failed to insert record');
+                }
+
+                message.className = 'form-message success';
+                message.textContent = '✅ ' + data.message;
+                form.reset();
+
+                // Reload the selected table so the inserted row is visible.
+                await fetchTable(getViewerRoute(tableName));
+                await fetchTablesList();
+            } catch (error) {
+                message.className = 'form-message error';
+                message.textContent = '❌ ' + error.message;
+            }
+        }
+
+        function getViewerRoute(tableName) {
+            const routes = {
+                'artist_members': 'artist-members',
+                'liked_songs': 'liked-songs',
+                'listen_history': 'listen-history'
+            };
+            return routes[tableName] || tableName;
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeJsString(value) {
+            return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        }
+
+        async function fetchTable(tableName) {
+            const content = document.getElementById('content');
+            content.innerHTML = `<div class="table-container"><div class="loading">Loading ${tableName}...</div></div>`;
+
+            try {
+                const response = await fetch(`${API_BASE}/${tableName}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    renderTable(data.data, tableName);
+                } else {
+                    content.innerHTML = `<div class="table-container"><div class="error">Error: ${data.message || 'Failed to load data'}</div></div>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<div class="table-container"><div class="error">Error: ${error.message}</div></div>`;
+            }
+            updateTimestamp();
+        }
+
+        async function fetchAllData() {
+            const content = document.getElementById('content');
+            content.innerHTML = `<div class="table-container"><div class="loading">Loading all data...</div></div>`;
+
+            try {
+                const response = await fetch(API_BASE + '/all-data');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // Update stats
+                    const statsContainer = document.getElementById('statsContainer');
+                    let statsHtml = '';
+                    for (const [tableName, rows] of Object.entries(data.data)) {
+                        statsHtml += `<div class="stat-card">
+                            <div class="stat-number">${rows.length}</div>
+                            <div class="stat-label">${tableName}</div>
+                        </div>`;
+                    }
+                    statsContainer.innerHTML = statsHtml;
+
+                    // Render data
+                    let html = '<div class="table-container">';
+                    for (const [tableName, rows] of Object.entries(data.data)) {
+                        html += `<div class="table-title">📊 ${tableName} (${rows.length} rows)</div>`;
+                        if (rows.length === 0) {
+                            html += '<p style="color: #888; padding: 10px;">No data</p>';
+                        } else {
+                            html += '<div style="overflow-x: auto; margin-bottom: 30px;">';
+                            html += '<table>';
+                            const headers = Object.keys(rows[0]);
+                            html += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead>';
+                            html += '<tbody>';
+                            rows.slice(0, 50).forEach(row => {
+                                html += '<tr>' + headers.map(h => `<td>${formatValue(row[h])}</td>`).join('') + '</tr>';
+                            });
+                            if (rows.length > 50) {
+                                html += `<tr><td colspan="${headers.length}" style="text-align:center;color:#888;">... and ${rows.length - 50} more rows</td></tr>`;
+                            }
+                            html += '</tbody></table></div>';
+                        }
+                    }
+                    html += '</div>';
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = `<div class="table-container"><div class="error">Error: ${data.message || 'Failed to load data'}</div></div>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<div class="table-container"><div class="error">Error: ${error.message}</div></div>`;
+            }
+            updateTimestamp();
+        }
+
+        function renderTable(data, tableName) {
+            if (!data || data.length === 0) {
+                document.getElementById('content').innerHTML = `
+                    <div class="table-container">
+                        <div class="table-title">📊 ${tableName}</div>
+                        <p style="color: #888; padding: 20px;">No data found in ${tableName}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const headers = Object.keys(data[0]);
+            let html = `
+                <div class="table-container">
+                    <div class="table-title">📊 ${tableName} (${data.length} rows)</div>
+                    <table>
+                        <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                        <tbody>
+            `;
+            data.slice(0, 100).forEach(row => {
+                html += '<tr>' + headers.map(h => `<td>${formatValue(row[h])}</td>`).join('') + '</tr>';
+            });
+            if (data.length > 100) {
+                html += `<tr><td colspan="${headers.length}" style="text-align:center;color:#888;">... and ${data.length - 100} more rows</td></tr>`;
+            }
+            html += '</tbody></table></div>';
+            document.getElementById('content').innerHTML = html;
+        }
+
+        function formatValue(value) {
+            if (value === null || value === undefined) return '<span style="color:#666;">NULL</span>';
+            if (typeof value === 'boolean') return value ? '✅' : '❌';
+            if (value instanceof Date || typeof value === 'string' && value.includes('-')) {
+                try {
+                    const date = new Date(value);
+                    if (!isNaN(date)) return date.toLocaleString();
+                } catch (e) {}
+            }
+            if (typeof value === 'string' && value.length > 50) {
+                return value.substring(0, 50) + '...';
+            }
+            return String(value);
+        }
+    </script>
+</body>
+</html>
