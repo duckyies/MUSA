@@ -31,23 +31,28 @@ def execute_query(query, params=None):
     connection = get_db_connection()
     if not connection:
         return None
-    
+
     cursor = connection.cursor(dictionary=True)
+
     try:
         if params:
             cursor.execute(query, params)
         else:
             cursor.execute(query)
-        
-        if query.strip().upper().startswith('SELECT'):
+
+        query_type = query.strip().upper()
+
+        if query_type.startswith(('SELECT', 'SHOW', 'DESCRIBE', 'DESC')):
             results = cursor.fetchall()
             return results
         else:
             connection.commit()
             return {'affected_rows': cursor.rowcount}
+
     except Error as e:
         print(f"Query error: {e}")
         return None
+
     finally:
         cursor.close()
         connection.close()
